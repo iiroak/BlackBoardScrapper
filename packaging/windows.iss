@@ -21,6 +21,9 @@ LicenseFile=..\LICENSE
 SetupIconFile=..\packaging\icon.ico
 UninstallIconFile=..\packaging\icon.ico
 WizardStyle=modern
+CloseApplications=yes
+RestartApplications=no
+AppMutex=CampusArchiveMutex
 
 [Files]
 Source: "..\dist\BlackBoardScrapper.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -35,3 +38,6 @@ Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; Group
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "Abrir {#AppName}"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{cmd}"; Parameters: "/C taskkill /F /IM {#AppExeName} >nul 2>&1"; Flags: runhidden
