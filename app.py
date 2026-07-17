@@ -1010,21 +1010,26 @@ def audit_manifest():
 @app.route("/api/manifest/repair", methods=["POST"])
 def repair_corrupt():
     manifest = Manifest()
+    audit = manifest.audit()
     removed = 0
-    for course in manifest.data.get("courses", {}).values():
+    for course_id, course in manifest.data.get("courses", {}).items():
         to_remove = []
         for ref, entry in course.get("files", {}).items():
             if entry.get("status") in ("corrupt", "missing"):
                 path = manifest._resolve_path(entry.get("path", ""))
                 if path and path.exists():
-                    path.unlink()
+                    try:
+                        path.unlink()
+                        logger.info("Reparación: eliminado %s", path)
+                    except OSError as exc:
+                        logger.warning("No se pudo eliminar %s: %s", path, exc)
                 to_remove.append(ref)
         for ref in to_remove:
             del course["files"][ref]
             removed += 1
     manifest.save()
     logger.info("Reparación: %d archivos corruptos eliminados del manifiesto", removed)
-    return jsonify({"removed": removed})
+    return jsonify({"removed": removed, "audit": audit})
 
 
 @app.route("/api/stats")
