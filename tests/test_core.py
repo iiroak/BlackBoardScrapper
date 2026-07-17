@@ -143,6 +143,24 @@ class CoreTests(unittest.TestCase):
 
                 self.assertTrue(manifest.file_needs_download("course", "remote-ref", "guide.pdf", 5, None))
 
+    def test_manifest_accepts_mime_valid_size_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "backup"
+            actual = output / "Term" / "course" / "guide.pdf"
+            actual.parent.mkdir(parents=True)
+            actual.write_bytes(b"guide")
+            manifest_path = output / "manifest.json"
+            with patch.object(storage_module, "current_root", return_value=output), patch.object(
+                storage_module, "manifest_path", return_value=manifest_path
+            ):
+                manifest = Manifest()
+                manifest.mark_downloaded("course", "remote-ref", "guide.pdf", 99, str(actual))
+                result = manifest.audit()
+
+                self.assertEqual(result["corrupt"], 0)
+                self.assertEqual(result["verified"], 1)
+                self.assertTrue(manifest.accepted_size_matches("course", "remote-ref", 5))
+
     def test_manifest_can_defer_persistence_during_scan(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "backup"

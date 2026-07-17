@@ -158,6 +158,14 @@ class Manifest:
         entry = self._entry(course_id, file_ref)
         return entry.get("status") if entry else None
 
+    def accepted_size_matches(self, course_id: str, file_ref: str, actual_size: int) -> bool:
+        entry = self._entry(course_id, file_ref)
+        return bool(
+            entry
+            and entry.get("size_mismatch_accepted")
+            and entry.get("accepted_actual_size") == actual_size
+        )
+
     def mark_downloaded(
         self,
         course_id: str,
@@ -179,6 +187,7 @@ class Manifest:
         course = self.get_course_state(course_id)
         files = course.setdefault("files", {})
         previous = files.get(file_ref, {})
+        size_mismatch_accepted = bool(file_size and file_size != actual_size)
         files[file_ref] = {
             "name": file_name,
             "size": file_size or actual_size,
@@ -189,6 +198,8 @@ class Manifest:
             "sha256": get_file_hash(path),
             "type": asset_type,
             "source_url": source_url,
+            "size_mismatch_accepted": size_mismatch_accepted,
+            "accepted_actual_size": actual_size if size_mismatch_accepted else None,
             "downloaded_at": previous.get("downloaded_at") or datetime.now().isoformat(),
             "verified_at": datetime.now().isoformat(),
             "status": "verified",
@@ -260,7 +271,11 @@ class Manifest:
                 actual_size = path.stat().st_size
                 entry["actual_size"] = actual_size
                 expected_size = entry.get("size", 0)
-                if expected_size not in (0, actual_size):
+                accepted_size = entry.get("accepted_actual_size")
+                size_matches = expected_size in (0, actual_size) or (
+                    entry.get("size_mismatch_accepted") and accepted_size == actual_size
+                )
+                if not size_matches:
                     entry["status"] = "corrupt"
                     result["corrupt"] += 1
                     result["corrupt_files"].append({
