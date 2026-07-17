@@ -24,8 +24,18 @@ Herramienta web para respaldar todo el contenido de Blackboard Learn (Universida
 
 ## Instalación
 
+### Un solo comando (Windows/Linux)
+
 ```bash
-git clone https://github.com/iroak/BlackBoardScrapper.git
+bash <(curl -sSL https://raw.githubusercontent.com/iiroak/BlackBoardScrapper/main/install.sh)
+```
+
+Esto clona, instala dependencias, descarga Playwright y crea el comando `campus-archive`.
+
+### Manual
+
+```bash
+git clone https://github.com/iiroak/BlackBoardScrapper.git
 cd BlackBoardScrapper
 python -m venv venv
 source venv/bin/activate  # o venv\Scripts\activate en Windows
