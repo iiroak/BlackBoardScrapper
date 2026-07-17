@@ -18,6 +18,8 @@ PrivilegesRequired=lowest
 Uninstallable=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 LicenseFile=..\LICENSE
+SetupIconFile=..\packaging\icon.ico
+UninstallIconFile=..\packaging\icon.ico
 WizardStyle=modern
 
 [Files]
@@ -25,8 +27,8 @@ Source: "..\dist\BlackBoardScrapper.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#AppExeName}"
 
 [Tasks]
 Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; GroupDescription: "Accesos directos:"

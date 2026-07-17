@@ -13,6 +13,7 @@ a = Analysis(
     datas=[
         (str(ROOT / "templates"), "templates"),
         (str(ROOT / "static"), "static"),
+        (str(ROOT / "packaging" / "icon.png"), "."),
     ],
     hiddenimports=collect_submodules("waitress"),
     hookspath=[],
@@ -35,4 +36,5 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
+    icon=str(ROOT / "packaging" / "icon.ico"),
 )
