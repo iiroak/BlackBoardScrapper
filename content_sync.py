@@ -227,9 +227,10 @@ def download_asset(session, manifest, course_id: str, asset: dict, callback=None
     path = Path(asset["path"])
     size = asset.get("size", 0)
     modified = asset.get("modified")
-    if path.is_file() and not manifest.file_needs_download(
+    needs_download = manifest.file_needs_download(
         course_id, asset["ref"], asset["name"], size, modified
-    ):
+    )
+    if path.is_file() and not needs_download:
         manifest.mark_downloaded(
             course_id, asset["ref"], asset["name"], size, str(path), modified,
             asset.get("type", "file"), asset.get("url", ""),
@@ -237,6 +238,11 @@ def download_asset(session, manifest, course_id: str, asset: dict, callback=None
         if callback:
             callback("skip", f"{asset['name']} ya verificado")
         return "skipped"
+
+    if path.is_file() and getattr(manifest, "file_status", lambda *_: None)(course_id, asset["ref"]) in (
+        "corrupt", "failed"
+    ):
+        path.unlink()
 
     if callback:
         callback("file", f"Descargando {asset['name']}")

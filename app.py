@@ -648,7 +648,12 @@ def find_missing():
                         verify_hash=False,
                     ):
                         continue
-                    if asset_path_on_disk.is_file() and asset_size in (0, asset_path_on_disk.stat().st_size):
+                    cached_status = manifest.file_status(course_id, asset["ref"])
+                    if (
+                        asset_path_on_disk.is_file()
+                        and asset_size in (0, asset_path_on_disk.stat().st_size)
+                        and cached_status not in ("corrupt", "missing", "failed")
+                    ):
                         manifest.mark_downloaded(
                             course_id,
                             asset["ref"],

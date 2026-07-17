@@ -124,6 +124,8 @@ class Manifest:
         cached = self._entry(course_id, file_ref)
         if cached is None:
             return True
+        if cached.get("status") in ("corrupt", "missing", "failed"):
+            return True
         cached_expected_size = cached.get("expected_size", cached.get("size"))
         if file_size not in (None, 0) and cached_expected_size not in (None, 0, file_size):
             return True
@@ -151,6 +153,10 @@ class Manifest:
         return not self.file_needs_download(
             course_id, file_ref, "", file_size, modified_date
         )
+
+    def file_status(self, course_id: str, file_ref: str) -> str | None:
+        entry = self._entry(course_id, file_ref)
+        return entry.get("status") if entry else None
 
     def mark_downloaded(
         self,

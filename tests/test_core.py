@@ -127,6 +127,22 @@ class CoreTests(unittest.TestCase):
                 manifest.mark_downloaded("course", "remote-ref", "guide.pdf", 5, str(actual))
                 self.assertFalse(manifest.file_needs_download("course", "remote-ref", "guide.pdf", "5", None))
 
+    def test_manifest_corrupt_status_forces_redownload(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "backup"
+            actual = output / "Term" / "course" / "guide.pdf"
+            actual.parent.mkdir(parents=True)
+            actual.write_bytes(b"guide")
+            manifest_path = output / "manifest.json"
+            with patch.object(storage_module, "current_root", return_value=output), patch.object(
+                storage_module, "manifest_path", return_value=manifest_path
+            ):
+                manifest = Manifest()
+                manifest.mark_downloaded("course", "remote-ref", "guide.pdf", 5, str(actual))
+                manifest.data["courses"]["course"]["files"]["remote-ref"]["status"] = "corrupt"
+
+                self.assertTrue(manifest.file_needs_download("course", "remote-ref", "guide.pdf", 5, None))
+
     def test_manifest_can_defer_persistence_during_scan(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "backup"
@@ -190,6 +206,32 @@ class CoreTests(unittest.TestCase):
 
             self.assertEqual(result, "downloaded")
             self.assertEqual(manifest.marked_path, destination)
+
+    def test_download_replaces_corrupt_existing_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "guide.pdf"
+            destination.write_bytes(b"wrong")
+
+            class CorruptManifest:
+                def file_needs_download(self, *args):
+                    return True
+
+                def file_status(self, *args):
+                    return "corrupt"
+
+                def mark_downloaded(self, *args):
+                    self.marked_path = Path(args[4])
+
+            manifest = CorruptManifest()
+            result = download_asset(
+                FakeSession(FakeResponse(b"guide")),
+                manifest,
+                "course",
+                {"ref": "remote-ref", "name": "guide.pdf", "size": 5, "url": "https://example.test/guide", "path": str(destination)},
+            )
+
+            self.assertEqual(result, "downloaded")
+            self.assertEqual(destination.read_bytes(), b"guide")
 
     def test_storage_files_excludes_transient_files(self):
         with tempfile.TemporaryDirectory() as directory:
