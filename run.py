@@ -8,11 +8,23 @@ Abre automáticamente el navegador en http://localhost:5000
 """
 
 import os
+import socket
 import threading
 import webbrowser
 
+
+def _available_port(start=5000):
+    for port in range(start, start + 20):
+        with socket.socket() as probe:
+            try:
+                probe.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError("No hay un puerto local disponible")
+
 if __name__ == "__main__":
-    port = 5000
+    port = int(os.environ.get("BB_PORT", _available_port()))
     url = f"http://127.0.0.1:{port}"
 
     print("=" * 50)
@@ -26,4 +38,6 @@ if __name__ == "__main__":
         threading.Timer(1.5, lambda: webbrowser.open(url)).start()
 
     from app import app
-    app.run(debug=True, port=port, threaded=True)
+    from waitress import serve
+
+    serve(app, host="127.0.0.1", port=port, threads=8)

@@ -4,11 +4,12 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from config import DEFAULT_OUTPUT_DIR, ONEDRIVE_ROOT_PATH
+from config import DEFAULT_OUTPUT_DIR, ONEDRIVE_ROOT_PATH, STORAGE_STATE_FILE
 from downloader import get_file_hash
 
 
-STATE_FILE = Path.home() / ".blackboard-scraper-storage.json"
+STATE_FILE = STORAGE_STATE_FILE
+LEGACY_STATE_FILE = Path.home() / ".blackboard-scraper-storage.json"
 
 
 class StorageError(RuntimeError):
@@ -22,12 +23,13 @@ class StorageConflict(StorageError):
 
 
 def current_root() -> Path:
-    try:
-        value = json.loads(STATE_FILE.read_text(encoding="utf-8")).get("root", "")
-        if value:
-            return Path(value).expanduser().resolve()
-    except (FileNotFoundError, OSError, json.JSONDecodeError):
-        pass
+    for state_file in (STATE_FILE, LEGACY_STATE_FILE):
+        try:
+            value = json.loads(state_file.read_text(encoding="utf-8")).get("root", "")
+            if value:
+                return Path(value).expanduser().resolve()
+        except (FileNotFoundError, OSError, json.JSONDecodeError):
+            continue
     return DEFAULT_OUTPUT_DIR
 
 

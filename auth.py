@@ -1,14 +1,13 @@
 import json
 import re
-import time
 from pathlib import Path
 
 import requests
-from playwright.sync_api import sync_playwright
 
-from config import BASE_URL, USER_AGENT
+from config import BASE_URL, USER_DATA_DIR, USER_AGENT
 
-SESSION_FILE = Path("./session.json")
+SESSION_FILE = USER_DATA_DIR / "session.json"
+LEGACY_SESSION_FILE = Path("./session.json")
 
 
 def _extract_xsrf(bbrouter_value: str) -> str | None:
@@ -91,38 +90,8 @@ def validate_session(session: requests.Session) -> dict | None:
     return None
 
 
-def extract_cookies_playwright(wait_for_login: bool = True) -> tuple[list[dict], str | None]:
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=False,
-            args=["--start-maximized"],
-        )
-        context = browser.new_context(
-            viewport={"width": 1280, "height": 900},
-            locale="es-ES",
-        )
-        page = context.new_page()
-        page.goto(f"{BASE_URL}/ultra/institution-page", wait_until="domcontentloaded")
-
-        if wait_for_login:
-            start = time.time()
-            while time.time() - start < 300:
-                time.sleep(1.5)
-                cookies = context.cookies()
-                if any(c.get("name") == "BbRouter" for c in cookies):
-                    time.sleep(1)
-                    cookies = context.cookies()
-                    break
-            else:
-                cookies = context.cookies()
-
-        cookies = context.cookies()
-        xsrf = _get_xsrf_from_cookies(cookies)
-        browser.close()
-        return cookies, xsrf
-
-
 def save_session(cookies, xsrf):
+    SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
     data = {
         "cookies": [
             {"name": c["name"], "value": c["value"], "domain": c["domain"], "path": c["path"]}
@@ -134,24 +103,27 @@ def save_session(cookies, xsrf):
 
 
 def load_session() -> tuple[requests.Session | None, str | None]:
-    if not SESSION_FILE.exists():
-        return None, None
-    try:
-        data = json.loads(SESSION_FILE.read_text(encoding="utf-8"))
-        cookies = data.get("cookies", [])
-        xsrf = data.get("xsrf")
-        if not cookies:
-            return None, None
-        session = make_session(cookies, xsrf)
-        user = validate_session(session)
-        if user:
-            return session, xsrf
-    except Exception:
-        pass
+    for session_file in (SESSION_FILE, LEGACY_SESSION_FILE):
+        if not session_file.exists():
+            continue
+        try:
+            data = json.loads(session_file.read_text(encoding="utf-8"))
+            cookies = data.get("cookies", [])
+            xsrf = data.get("xsrf")
+            if not cookies:
+                continue
+            session = make_session(cookies, xsrf)
+            user = validate_session(session)
+            if user:
+                if session_file != SESSION_FILE:
+                    save_session(cookies, xsrf)
+                return session, xsrf
+        except Exception:
+            continue
     return None, None
 
 
-def login_flow() -> tuple[requests.Session, str | None]:
+def login_flow() -> tuple[requests.Session | None, str | None]:
     print("=" * 60)
     print("  BLACKBOARD BACKUP SCRAPER - AUTENTICACIÓN")
     print("=" * 60)
@@ -166,40 +138,9 @@ def login_flow() -> tuple[requests.Session, str | None]:
             print(f"  Usuario: {name}")
             return session, xsrf
 
-    print("  Abriendo Chromium para login...")
-    print("  → Se abrirá una ventana de Chromium")
-    print("  → Inicia sesión con tu cuenta institucional")
-    print("  → Cuando las cookies se detecten, se cerrará solo")
-    print()
-
-    try:
-        cookies, xsrf = extract_cookies_playwright(wait_for_login=True)
-    except Exception as e:
-        print(f"\n  ✗ Error con Playwright: {e}")
-        raw = input("  Pega las cookies manualmente (o ENTER para salir): ").strip()
-        if not raw:
-            return None, None
-        cookies = []
-        for part in raw.split(";"):
-            if "=" in part:
-                k, v = part.strip().split("=", 1)
-                cookies.append({"name": k, "value": v, "domain": "campusvirtual.umayor.cl", "path": "/"})
-        xsrf = _get_xsrf_from_cookies(cookies)
-
-    if not cookies or not any(c.get("name") == "BbRouter" for c in cookies):
-        print("  ✗ No se detectó sesión activa (cookie BbRouter no encontrada).")
-        return None, None
-
-    session = make_session(cookies, xsrf)
-    user = validate_session(session)
-    if user:
-        name = f"{user.get('givenName', '')} {user.get('familyName', '')}".strip()
-        print(f"\n  ✓ Sesión válida: {name}")
-        save_session(cookies, xsrf)
-        return session, xsrf
-    else:
-        print("\n  ✗ Sesión inválida.")
-        return None, None
+    print("  No hay una sesión guardada.")
+    print("  Abre la interfaz web, conecta las cookies de Blackboard y vuelve a ejecutar el CLI.")
+    return None, None
 
 
 def get_console_script() -> str:

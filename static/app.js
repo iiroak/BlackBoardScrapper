@@ -127,24 +127,6 @@ function switchTab(tabId) {
   document.querySelectorAll('.connect-content').forEach(tab => tab.classList.toggle('active', tab.id === tabId));
 }
 
-async function connectPlaywright() {
-  const button = $('btnPlaywright');
-  button.disabled = true;
-  button.textContent = 'Abriendo navegador...';
-  $('pwStatus').hidden = false;
-  $('pwStatusText').textContent = 'Esperando login... (máx. 5 min)';
-  try {
-    const data = await api('/api/auth/connect_playwright', { method: 'POST' });
-    if (!data.success) throw new Error(data.error || 'No se detectó la sesión');
-    closeConnectModal();
-    setConnected(data.user);
-  } catch (error) {
-    $('pwStatusText').textContent = error.message;
-    button.disabled = false;
-    button.textContent = 'Intentar de nuevo';
-  }
-}
-
 async function connectManual() {
   const input = $('cookieInput');
   const errorBox = $('manualError');

@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 BASE_URL = "https://campusvirtual.umayor.cl"
@@ -6,7 +7,29 @@ API_BASE = f"{BASE_URL}/learn/api/v1"
 PUBLIC_API_BASE = f"{BASE_URL}/learn/api/public/v1"
 COLLAB_BASE = "https://us-lti.bbcollab.com/collab/api/csa"
 
-DEFAULT_OUTPUT_DIR = Path(os.environ.get("BB_OUTPUT_DIR", "./backup")).resolve()
+APP_NAME = "Campus Archive"
+
+
+def user_data_dir() -> Path:
+    """Return a writable per-user directory for session and app state."""
+    if sys.platform == "win32":
+        root = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    else:
+        root = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+    return root / "Campus Archive"
+
+
+def documents_dir() -> Path:
+    configured = os.environ.get("BB_DOCUMENTS_DIR")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    documents = Path.home() / "Documents"
+    return documents if documents.is_dir() else Path.home()
+
+
+USER_DATA_DIR = user_data_dir()
+STORAGE_STATE_FILE = USER_DATA_DIR / "storage.json"
+DEFAULT_OUTPUT_DIR = Path(os.environ.get("BB_OUTPUT_DIR", documents_dir() / APP_NAME)).expanduser().resolve()
 OUTPUT_DIR = DEFAULT_OUTPUT_DIR
 MANIFEST_FILE = OUTPUT_DIR / "manifest.json"
 

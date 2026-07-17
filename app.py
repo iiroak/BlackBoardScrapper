@@ -8,7 +8,6 @@ from flask import Flask, Response, jsonify, render_template, request
 
 from auth import (
     console_session_setup,
-    extract_cookies_playwright,
     get_console_script,
     load_session,
     make_session,
@@ -39,8 +38,6 @@ state = {
     "xsrf": None,
     "user": None,
     "connected": False,
-    "pending_browser": None,
-    "pending_context": None,
 }
 
 progress_streams: dict[str, queue.Queue] = {}
@@ -82,18 +79,6 @@ def _get_session_expiry(cookies_list: list[dict]) -> int | None:
 
 @app.route("/api/auth/status")
 def auth_status():
-    if state.get("pending_browser"):
-        s = state["session"]
-        if s:
-            user = validate_session(s)
-            if user:
-                state["connected"] = True
-                state["user"] = user
-                state["pending_browser"] = None
-                return jsonify({"connected": True, "user": _user_summary(user)})
-            state["connected"] = False
-        return jsonify({"connected": False, "user": None, "pending": True})
-
     s = state["session"]
     if s:
         user = validate_session(s)
@@ -125,9 +110,12 @@ def auth_status():
                 "expires_at": expiry,
             })
         # Session expired — delete stale file
-        sf = Path("./session.json")
-        if sf.exists():
-            sf.unlink()
+        from auth import SESSION_FILE
+        if SESSION_FILE.exists():
+            SESSION_FILE.unlink()
+        legacy = Path("./session.json")
+        if legacy.exists():
+            legacy.unlink()
 
     return jsonify({"connected": False, "user": None})
 
@@ -149,21 +137,9 @@ def auth_connect():
             _set_session_from_loaded(s, x)
             return jsonify({"success": True, "method": "session_file", "user": _user_summary(user)})
 
-    # Manual connect - returns immediately, user will click "finalize"
     state["connected"] = False
     state["session"] = None
-    return jsonify({"success": True, "method": "prompt"})
-
-
-@app.route("/api/auth/connect_playwright", methods=["POST"])
-def auth_connect_playwright():
-    try:
-        cookies, xsrf = extract_cookies_playwright(wait_for_login=True)
-        if _set_session(cookies, xsrf):
-            return jsonify({"success": True, "method": "playwright", "user": _user_summary(state["user"])})
-        return jsonify({"success": False, "error": "No se detectó sesión en el navegador"}), 400
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+    return jsonify({"success": False, "error": "No hay una sesión guardada. Pega las cookies de Blackboard primero."}), 400
 
 
 @app.route("/api/auth/connect_manual", methods=["POST"])

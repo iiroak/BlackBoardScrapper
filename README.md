@@ -14,31 +14,38 @@ Herramienta web para respaldar todo el contenido de Blackboard Learn (Universida
 - **Manifiesto local** — `manifest.json` con hash, tamaño, fecha de modificación por archivo
 - **Organización automática** — `Semestre/Curso/contenido/` con metadatos JSON
 - **Soporte Collaborate** — detección y descarga de grabaciones de sesiones
-- **Autenticación vía Playwright** — soporte para login con cookies o script de consola
+- **Autenticación local** — valida cookies de una sesión activa sin guardar contraseñas
 
 ## Requisitos
 
-- Python 3.10+
-- Playwright (para autenticación inicial)
+- Python 3.10+ (solo para ejecutar desde el código fuente)
 - OneDrive (opcional, para almacenamiento en nube)
 
 ## Instalación
 
-### Linux / WSL
+### Windows (recomendado para usuarios finales)
 
-```bash
-bash <(curl -sSL https://raw.githubusercontent.com/iiroak/BlackBoardScrapper/main/install.sh)
-```
+Descarga `Campus-Archive-Setup.exe` desde la sección [Releases](https://github.com/iiroak/BlackBoardScrapper/releases), ejecútalo y sigue el asistente. No necesitas Python, Git, WSL ni instalar dependencias.
 
-Crea el comando `campus-archive`. Para actualizar, corré el mismo comando.
+El instalador crea accesos en Inicio y escritorio, abre la aplicación en el navegador predeterminado y agrega un desinstalador en Configuración de Windows. El backup se conserva al desinstalar.
 
-### Windows (PowerShell)
+También puedes descargarlo desde PowerShell:
 
 ```powershell
 irm https://raw.githubusercontent.com/iiroak/BlackBoardScrapper/main/install.ps1 | iex
 ```
 
-Te deja un acceso directo `Campus Archive.bat` en el escritorio. Si pide permisos de admin para Chromium, cerralo y volvé a correr PowerShell como administrador.
+### Linux
+
+Descarga `Campus-Archive-x86_64.AppImage` desde [Releases](https://github.com/iiroak/BlackBoardScrapper/releases), dale permiso de ejecución y ábrelo.
+
+Para instalarlo automáticamente en el menú de aplicaciones:
+
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/iiroak/BlackBoardScrapper/main/install.sh)
+```
+
+Después puedes abrirlo con `blackboardscrapper`. Para desinstalarlo usa `uninstall-blackboardscrapper`; tus backups no se borran.
 
 ### Manual
 
@@ -48,7 +55,6 @@ cd BlackBoardScrapper
 python -m venv venv
 source venv/bin/activate  # o venv\Scripts\activate en Windows
 pip install -r requirements.txt
-playwright install chromium
 ```
 
 ## Uso
@@ -74,7 +80,7 @@ Descarga todos los cursos del usuario autenticado a la carpeta de almacenamiento
 ```
 BlackBoardScrapper/
 ├── app.py              # Servidor Flask y endpoints API
-├── auth.py             # Autenticación con cookies de Playwright
+├── auth.py             # Validación y persistencia de cookies
 ├── bb_client.py        # Cliente de Blackboard Learn API
 ├── collab_client.py    # Cliente de Blackboard Collaborate
 ├── config.py           # Configuración central (URLs, timeouts)
@@ -86,7 +92,7 @@ BlackBoardScrapper/
 ├── organizer.py        # Organización de archivos en disco
 ├── storage.py          # Detección y migración de almacenamiento
 ├── run.py              # Lanzador de la interfaz web
-├── extract_session.py  # Extracción de sesión de cookies
+├── packaging/          # PyInstaller, Inno Setup y AppImage
 ├── static/             # CSS, JS, SVG
 ├── templates/          # HTML (Jinja2)
 ├── tests/              # Tests unitarios
@@ -99,8 +105,8 @@ BlackBoardScrapper/
 
 | Componente | Tecnología |
 |-----------|-----------|
-| Backend | Python 3.12, Flask |
-| Auth | Playwright (Chromium headless) |
+| Backend | Python 3.12, Flask, Waitress |
+| Auth | Cookies de sesión + Blackboard REST API |
 | API | Blackboard Learn REST API |
 | Almacenamiento | Sistema de archivos local / OneDrive |
 | Frontend | HTML5, CSS3, Vanilla JS |

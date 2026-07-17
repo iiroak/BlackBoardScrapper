@@ -9,3 +9,6 @@ backup/**/*.part
 .blackboard-scraper-storage.json
 .serena/
 *.log
+build/
+dist/
+.tools/

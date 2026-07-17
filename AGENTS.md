@@ -47,7 +47,7 @@ Python/Flask web app to backup Blackboard Learn courses. Universidad Mayor targe
 
 ## Dev server
 ```bash
-python run.py          # Flask on :5000, debug mode, auto-reload
+python run.py          # servidor local Waitress, abre el navegador
 ```
 
 ## Testing
@@ -57,7 +57,7 @@ python -m pytest tests/ -v
 
 ## Architecture
 - `app.py` — Flask server, SSE progress, download/audit/scan endpoints
-- `auth.py` — Playwright-based session extraction, cookie validation
+- `auth.py` — cookie parsing, session persistence, and validation
 - `bb_client.py` — Blackboard Learn REST API wrapper
 - `collab_client.py` — Collaborate Ultra recording API
 - `content_sync.py` — Content tree traversal, asset download dispatch
@@ -67,7 +67,7 @@ python -m pytest tests/ -v
 - `organizer.py` — File system layout (semester/course/content/)
 - `maintenance.py` — Audit and cleanup tasks
 - `config.py` — URLs, timeouts, constants
-- `extract_session.py` — Cookie extraction utils
+- `packaging/` — PyInstaller, Inno Setup, and AppImage build files
 - `static/app.js` — Frontend SPA, SSE client, operation phases
 - `templates/index.html` — Single-page app shell
 - `tests/test_core.py` — Unit tests
@@ -80,6 +80,12 @@ python -m pytest tests/ -v
 - Storage migration (`storage.migrate_to`) — atomic copy-then-delete, conflict detection
 
 ## Storage
-- Root controlled by `~/.blackboard-scraper-storage.json`
-- OneDrive auto-detected on WSL via `/mnt/c/Users/*/OneDrive`
-- Default: `./backup`
+- Session and app state: `%LOCALAPPDATA%/Campus Archive` on Windows or `~/.local/share/Campus Archive` on Linux
+- OneDrive auto-detected on Windows/WSL via environment variables and `/mnt/c/Users/*/OneDrive`
+- Default backup: `Documents/Campus Archive`
+- `BB_OUTPUT_DIR` overrides the default backup location
+
+## Packaging
+- Windows: build `Campus-Archive-Setup.exe` with `packaging/windows.iss` after PyInstaller.
+- Linux: build `Campus-Archive-x86_64.AppImage` with `packaging/build-appimage.sh`.
+- GitHub Actions intentionally does not run for pull requests. CI runs on `main`; release builds run only for `v*.*.*` tags or manual dispatch.

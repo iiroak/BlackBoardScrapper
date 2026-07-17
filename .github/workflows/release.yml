@@ -1,0 +1,79 @@
+name: Release installers
+
+on:
+  # Releases only happen for an explicit version tag or manual dispatch.
+  # There is intentionally no pull_request trigger and no build on ordinary pushes.
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt -r requirements-build.txt
+      - name: Build executable
+        run: pyinstaller packaging/blackboardscrapper.spec --noconfirm --clean
+      - name: Build installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: packaging/windows.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/installer/Campus-Archive-Setup.exe
+          if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt -r requirements-build.txt
+      - name: Build executable
+        run: pyinstaller packaging/blackboardscrapper.spec --noconfirm --clean
+      - name: Build AppImage
+        run: packaging/build-appimage.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: dist/Campus-Archive-x86_64.AppImage
+          if-no-files-found: error
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            release-assets/windows-installer/Campus-Archive-Setup.exe \
+            release-assets/linux-appimage/Campus-Archive-x86_64.AppImage \
+            --repo "$GITHUB_REPOSITORY" \
+            --generate-notes
