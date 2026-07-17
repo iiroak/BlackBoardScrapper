@@ -1002,7 +1002,29 @@ def get_manifest():
 def audit_manifest():
     result = Manifest().audit()
     logger.info("Auditoría: %d verificados, %d corruptos, %d faltantes", result["verified"], result["corrupt"], result["missing"])
+    for cf in result.get("corrupt_files", []):
+        logger.info("  → %s: %s", cf["name"], cf["reason"])
     return jsonify(result)
+
+
+@app.route("/api/manifest/repair", methods=["POST"])
+def repair_corrupt():
+    manifest = Manifest()
+    removed = 0
+    for course in manifest.data.get("courses", {}).values():
+        to_remove = []
+        for ref, entry in course.get("files", {}).items():
+            if entry.get("status") in ("corrupt", "missing"):
+                path = manifest._resolve_path(entry.get("path", ""))
+                if path and path.exists():
+                    path.unlink()
+                to_remove.append(ref)
+        for ref in to_remove:
+            del course["files"][ref]
+            removed += 1
+    manifest.save()
+    logger.info("Reparación: %d archivos corruptos eliminados del manifiesto", removed)
+    return jsonify({"removed": removed})
 
 
 @app.route("/api/stats")

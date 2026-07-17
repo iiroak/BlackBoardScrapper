@@ -250,6 +250,7 @@ function updateDashboardStats() {
   const status = $('healthStatus');
   status.className = 'status-pill ' + (stats.corrupt_files ? 'error' : stats.pending_files ? 'pending' : checked ? 'verified' : 'neutral');
   status.textContent = stats.corrupt_files ? 'Revisar' : stats.pending_files ? 'Pendiente' : checked ? 'Verificado' : 'Esperando';
+  $('repairButton').hidden = !(stats.corrupt_files > 0);
   $('healthMessage').textContent = checked ? `${verified} de ${checked} archivos tienen una copia local íntegra.` : 'Ejecuta una auditoría para comprobar la integridad del archivo local.';
 }
 
@@ -493,7 +494,28 @@ function connectOperation(taskId, total) {
 
 async function runAudit() {
   showOperations('Verificar archivos · SHA-256');
-  try { const result = await api('/api/manifest/audit', { method: 'POST' }); finishOperation(`${result.verified || 0} archivos verificados`); } catch (error) { failOperation(error.message); }
+  try {
+    const result = await api('/api/manifest/audit', { method: 'POST' });
+    let msg = `${result.verified || 0} verificados, ${result.corrupt || 0} corruptos, ${result.missing || 0} faltantes`;
+    if (result.corrupt_files && result.corrupt_files.length) {
+      msg += '\n\nArchivos con problemas:';
+      result.corrupt_files.forEach(f => { msg += `\n• ${f.name}: ${f.reason}`; });
+    }
+    finishOperation(msg);
+    $('repairButton').hidden = !(result.corrupt > 0);
+    loadDashboard();
+  } catch (error) { failOperation(error.message); }
+}
+
+async function repairCorrupt() {
+  if (!confirm('Esto eliminará los archivos corruptos del manifiesto para que se re-descarguen. ¿Continuar?')) return;
+  showOperations('Reparar archivos corruptos');
+  try {
+    const result = await api('/api/manifest/repair', { method: 'POST' });
+    finishOperation(`${result.removed} archivos eliminados del manifiesto. Sincronizá de nuevo para re-descargarlos.`);
+    $('repairButton').hidden = true;
+    loadDashboard();
+  } catch (error) { failOperation(error.message); }
 }
 
 // Small UI helpers ----------------------------------------------------------

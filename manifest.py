@@ -231,9 +231,9 @@ class Manifest:
 
     def audit(self) -> dict[str, int]:
         """Verify every indexed file and migrate legacy paths/hashes in place."""
-        result = {"checked": 0, "verified": 0, "missing": 0, "corrupt": 0, "rehash": 0, "repaired": 0}
-        for course in self.data.get("courses", {}).values():
-            for entry in course.get("files", {}).values():
+        result = {"checked": 0, "verified": 0, "missing": 0, "corrupt": 0, "rehash": 0, "repaired": 0, "corrupt_files": []}
+        for course_id, course in self.data.get("courses", {}).items():
+            for ref, entry in course.get("files", {}).items():
                 result["checked"] += 1
                 entry["path"] = self._portable_path(entry.get("path", ""))
                 path = self._resolve_path(entry["path"])
@@ -254,11 +254,23 @@ class Manifest:
                 if expected_size not in (0, actual_size):
                     entry["status"] = "corrupt"
                     result["corrupt"] += 1
+                    result["corrupt_files"].append({
+                        "name": entry.get("name", ""),
+                        "path": entry["path"],
+                        "reason": f"tamaño: esperado {expected_size}, disco {actual_size}",
+                    })
+                    logger.warning("Corrupto (tamaño): %s — esperado %s, disco %s", entry.get("name"), expected_size, actual_size)
                     continue
                 digest = get_file_hash(path)
                 if entry.get("sha256") and entry["sha256"] != digest:
                     entry["status"] = "corrupt"
                     result["corrupt"] += 1
+                    result["corrupt_files"].append({
+                        "name": entry.get("name", ""),
+                        "path": entry["path"],
+                        "reason": "hash SHA-256 no coincide",
+                    })
+                    logger.warning("Corrupto (hash): %s", entry.get("name"))
                     continue
                 if not entry.get("sha256"):
                     result["rehash"] += 1

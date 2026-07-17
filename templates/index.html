@@ -33,7 +33,7 @@
               <div class="health-score"><strong id="healthPercent">--</strong><span>integridad verificada</span></div>
               <div class="meter"><span id="healthMeter"></span></div>
               <p id="healthMessage">Conecta una cuenta para comparar el contenido local con Blackboard.</p>
-              <div class="health-foot"><span id="auditLabel">Última auditoría: nunca</span><button class="text-button" onclick="runAudit()">Verificar ahora <b>→</b></button></div>
+              <div class="health-foot"><span id="auditLabel">Última auditoría: nunca</span><button class="text-button" onclick="runAudit()">Verificar ahora <b>→</b></button><button id="repairButton" class="text-button" onclick="repairCorrupt()" hidden>Reparar corruptos <b>→</b></button></div>
             </article>
             <div class="metric-grid">
               <article class="metric-card"><span class="metric-label">ARCHIVO LOCAL</span><strong id="metricSize">--</strong><span id="metricFiles">-- archivos</span></article>
