@@ -36,4 +36,4 @@ if [ ! -x "$TOOL" ]; then
     chmod +x "$TOOL"
 fi
 
-ARCH=x86_64 "$TOOL" "$APPDIR" "$ROOT/dist/Campus-Archive-x86_64.AppImage"
+ARCH=x86_64 "$TOOL" --appimage-extract-and-run "$APPDIR" "$ROOT/dist/Campus-Archive-x86_64.AppImage"
