@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+venv/
+session.json
+cookies.txt
+backup/**/*.json.tmp
+backup/**/*.part
+.blackboard-scraper-storage.json
+.serena/
+*.log

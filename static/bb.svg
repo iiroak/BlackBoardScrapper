@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="526" height="522" viewBox="0 0 526 522" role="img" aria-labelledby="title desc">
+  <title id="title">Blackboard</title>
+  <desc id="desc">Icono Bb sobre un cuadrado redondeado rosa y ciruela</desc>
+  <rect x="8" y="7" width="508" height="508" rx="54" fill="#8e3f67"/>
+  <rect x="18" y="17" width="488" height="488" rx="44" fill="#f2a9c5"/>
+  <text x="265" y="344" fill="#2a1f35" font-family="Open Sans, Arial, sans-serif" font-size="211" font-weight="700" letter-spacing="10" text-anchor="middle">Bb</text>
+</svg>

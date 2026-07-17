@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101827">
+  <title>Campus Archive</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" onclick="showDashboard(); return false;">
+        <img class="brand-mark" src="/static/bb.svg" alt="Blackboard">
+        <span><strong>Campus</strong> Archive<small>Blackboard backup desk</small></span>
+      </a>
+      <div class="account-area">
+        <span class="connection-state"><i id="statusDot" class="status-dot off"></i><span id="statusText">Sin conexión</span></span>
+        <span id="userInfo" class="account-name" hidden></span>
+        <button id="btnConnect" class="button button-light" onclick="showConnectModal()">Conectar cuenta</button>
+        <button id="btnDisconnect" class="button button-ghost" onclick="disconnect()" hidden>Desconectar</button>
+        <button id="btnStorage" class="button button-soft" onclick="showStorageModal()">Almacenamiento</button>
+      </div>
+    </header>
+
+    <main class="page-wrap">
+      <section id="dashboardView">
+        <div class="intro-row">
+          <section class="health-layout" aria-label="Estado del archivo">
+            <article id="healthCard" class="health-card">
+              <div class="health-top"><span class="section-kicker">SALUD DEL ARCHIVO</span><span id="healthStatus" class="status-pill neutral">Esperando</span></div>
+              <div class="health-score"><strong id="healthPercent">--</strong><span>integridad verificada</span></div>
+              <div class="meter"><span id="healthMeter"></span></div>
+              <p id="healthMessage">Conecta una cuenta para comparar el contenido local con Blackboard.</p>
+              <div class="health-foot"><span id="auditLabel">Última auditoría: nunca</span><button class="text-button" onclick="runAudit()">Verificar ahora <b>→</b></button></div>
+            </article>
+            <div class="metric-grid">
+              <article class="metric-card"><span class="metric-label">ARCHIVO LOCAL</span><strong id="metricSize">--</strong><span id="metricFiles">-- archivos</span></article>
+              <article class="metric-card accent"><span class="metric-label">CURSOS</span><strong id="metricCourses">--</strong><span>periodos archivados</span></article>
+              <article class="metric-card"><span class="metric-label">VERIFICADOS</span><strong id="metricVerified">--</strong><span id="metricIssues">-- pendientes</span></article>
+            </div>
+          </section>
+          <div class="intro-actions">
+            <button class="button button-primary" onclick="runAudit()">Verificar archivos</button>
+            <button class="button button-soft" onclick="syncAllMissing()">Sincronizar pendientes</button>
+          </div>
+        </div>
+
+        <div id="authGate" class="auth-gate">
+          <div class="gate-mark">/</div>
+          <div><strong>Conecta tu cuenta para comenzar</strong><span>El archivo local se conserva. Solo necesitamos leer el contenido de Blackboard.</span></div>
+          <button class="button button-primary" onclick="showConnectModal()">Conectar ahora</button>
+        </div>
+
+        <section class="courses-section">
+          <div class="section-heading"><div><p class="eyebrow">ÍNDICE</p><h2>Cursos archivados</h2></div><span id="courseCount" class="result-count">0 cursos</span></div>
+          <div class="course-toolbar">
+            <label class="search-field"><span>/</span><input id="courseSearch" type="search" placeholder="Buscar por nombre o código" oninput="renderCourses()"></label>
+            <select id="termFilter" class="select-field" onchange="renderCourses()"><option value="">Todos los periodos</option></select>
+            <select id="statusFilter" class="select-field" onchange="renderCourses()"><option value="">Todos los estados</option><option value="complete">Completos</option><option value="pending">Con pendientes</option><option value="error">Con errores</option></select>
+            <button id="refreshCourses" class="icon-button" onclick="loadDashboard()" title="Actualizar cursos">↻</button>
+          </div>
+          <div id="coursesGrid" class="courses-grid"><div class="loading-state"><span class="loader"></span>Cargando índice...</div></div>
+        </section>
+      </section>
+
+      <section id="courseWorkspace" class="workspace" hidden>
+        <div class="workspace-head"><button class="back-button" onclick="showDashboard()">← Índice de cursos</button><span id="workspaceState" class="status-pill neutral">Cargando</span></div>
+        <div class="workspace-title"><div><p id="workspaceTerm" class="eyebrow">PERIODO</p><h1 id="workspaceName">Curso</h1><p id="workspaceCode" class="muted">Código</p></div><button id="syncCourseButton" class="button button-primary" onclick="syncCourse()">Sincronizar curso</button></div>
+        <div class="workspace-layout">
+          <aside class="tree-panel"><div class="panel-title"><span>ESTRUCTURA</span><button class="text-button" onclick="expandAllFolders()">Expandir</button></div><div id="courseTree" class="course-tree"></div></aside>
+          <section class="files-panel"><div class="files-head"><div><span class="section-kicker">CONTENIDO DEL CURSO</span><h2 id="filesTitle">Archivos</h2></div><label class="search-field compact"><span>/</span><input id="fileSearch" type="search" placeholder="Filtrar archivos" oninput="renderFiles()"></label></div><div class="table-wrap"><table><thead><tr><th class="check-col"><input id="selectVisible" type="checkbox" onchange="toggleVisible(this.checked)"></th><th>Nombre</th><th>Ubicación</th><th>Tipo</th><th>Tamaño</th><th>Estado</th></tr></thead><tbody id="filesTable"></tbody></table></div></section>
+          <aside id="inspector" class="inspector"><div class="inspector-empty"><span class="inspector-symbol" aria-hidden="true"></span><strong>Selecciona un archivo</strong><span>Sus metadatos y estado aparecerán aquí.</span></div></aside>
+        </div>
+      </section>
+    </main>
+
+    <div id="selectionDock" class="selection-dock" hidden><div><strong id="selectionCount">0 seleccionados</strong><span id="selectionWeight">0 B estimados</span></div><button class="button button-ghost" onclick="clearSelection()">Limpiar</button><button class="button button-primary" onclick="syncSelected()">Sincronizar selección <b>→</b></button></div>
+    <aside id="operationsPanel" class="operations-panel" hidden><div class="operations-head"><div><span class="section-kicker">CENTRO DE OPERACIONES</span><strong id="operationTitle">Sincronización</strong></div><button class="icon-button" onclick="hideOperations()">×</button></div><div class="operation-meter"><span id="operationFill"></span></div><div class="operation-meta"><span id="operationCount">Preparando</span><span id="operationMessage">Preparando...</span></div><div id="operationLog" class="operation-log"></div></aside>
+    <div id="toast" class="toast" hidden></div>
+
+    <div id="connectModal" class="modal-overlay" hidden>
+      <div class="modal-card"><div class="modal-head"><div><p class="eyebrow">AUTENTICACIÓN LOCAL</p><h2>Conectar Blackboard</h2></div><button class="icon-button" onclick="closeConnectModal()">×</button></div>
+        <div class="connect-tabs"><button class="connect-tab active" data-tab="tab-manual" onclick="switchTab('tab-manual')">Cookies</button><button class="connect-tab" data-tab="tab-advanced" onclick="switchTab('tab-advanced')">Avanzado</button></div>
+        <div id="tab-manual" class="connect-content active"><h3>Pegar cookies de una sesión activa</h3><p>Abre Blackboard en tu navegador e inicia sesión normalmente. Luego sigue estos pasos:</p><ol class="cookie-steps"><li>Presiona <strong>F12</strong> o <strong>Ctrl + Shift + I</strong> para abrir las herramientas de desarrollador.</li><li>Entra en <strong>Network</strong> o <strong>Red</strong> y recarga la página de Blackboard.</li><li>Selecciona cualquier solicitud hacia <strong>campusvirtual.umayor.cl</strong>.</li><li>En <strong>Headers</strong> o <strong>Encabezados</strong>, abre <strong>Request Headers</strong> y busca <code>Cookie</code>.</li><li>Haz clic derecho sobre el valor de Cookie y elige <strong>Copy value</strong>. Es la opción más rápida.</li><li>También puedes pegar el JSON completo o usar <strong>Copy as cURL</strong>; la app extraerá la cookie automáticamente.</li></ol><p class="cookie-hint">Las cookies se validan localmente y no se muestran fuera de esta aplicación.</p><textarea id="cookieInput" class="cookie-input" placeholder="Cookie: BbRouter=...; JSESSIONID=..., JSON o cURL"></textarea><button class="button button-primary full-button" onclick="connectManual()">Validar cookies</button><div id="manualError" class="form-error" hidden></div></div>
+        <div id="tab-advanced" class="connect-content"><span class="feature-mark">02</span><h3>Herramientas avanzadas</h3><p>Alternativas para depurar una sesión o reutilizar el archivo de terminal.</p><div class="advanced-actions"><button class="button button-soft" onclick="copyConsoleScript()">Copiar script de consola</button><button class="button button-soft" onclick="reloadSession()">Recargar session.json</button></div><pre id="consoleScript" class="code-snippet">Cargando...</pre></div>
+        <p class="modal-note">La sesión se usa únicamente para consultar tu Campus Virtual y descargar archivos que tú selecciones.</p>
+      </div>
+    </div>
+
+    <div id="storageModal" class="modal-overlay" hidden>
+      <div class="modal-card cloud-modal"><div class="modal-head"><div><p class="eyebrow">GESTOR DE ALMACENAMIENTO</p><h2>Almacenamiento</h2></div><button class="icon-button" onclick="closeStorageModal()">×</button></div>
+        <p class="cloud-intro">El backup se guarda en un único destino. Si eliges OneDrive, Blackboard descargará directamente dentro de su carpeta sincronizada.</p>
+        <div class="storage-options"><button class="storage-option" onclick="selectStorage('local')"><strong>Este equipo</strong><span>Guardar en la carpeta local</span></button><button class="storage-option" onclick="selectStorage('onedrive')"><strong>OneDrive</strong><span>Guardar directamente en la nube sincronizada</span></button><button class="storage-option" onclick="selectStorage('custom')"><strong>Otra carpeta</strong><span>Elegir una ubicación específica</span></button></div>
+        <label class="storage-path-label">Ruta específica<input id="storagePath" class="storage-path" type="text" placeholder="Opcional: /ruta/de/almacenamiento"></label>
+        <div id="storageError" class="form-error" hidden></div>
+        <div id="storageAccount" class="cloud-account"><span class="status-dot on"></span><div><strong id="storageName">Este equipo</strong><span id="storageRoot"></span></div></div>
+        <p id="storageState" class="cloud-note"></p>
+      </div>
+    </div>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
