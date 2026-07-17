@@ -24,13 +24,21 @@ Herramienta web para respaldar todo el contenido de Blackboard Learn (Universida
 
 ## Instalación
 
-### Un solo comando (Windows/Linux)
+### Linux / WSL
 
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/iiroak/BlackBoardScrapper/main/install.sh)
 ```
 
-Esto clona, instala dependencias, descarga Playwright y crea el comando `campus-archive`.
+Crea el comando `campus-archive`. Para actualizar, corré el mismo comando.
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/iiroak/BlackBoardScrapper/main/install.ps1 | iex
+```
+
+Te deja un acceso directo `Campus Archive.bat` en el escritorio. Si pide permisos de admin para Chromium, cerralo y volvé a correr PowerShell como administrador.
 
 ### Manual
 
