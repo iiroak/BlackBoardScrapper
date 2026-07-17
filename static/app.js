@@ -80,11 +80,21 @@ async function api(url, options = {}) {
 async function checkAuth() {
   todayLabel();
   loadStorageStatus();
+  checkForUpdate();
   try {
     const data = await api('/api/auth/status');
     if (data.connected) setConnected(data.user, data.restored);
     else loadDashboard();
   } catch { loadDashboard(); }
+}
+
+async function checkForUpdate() {
+  try {
+    const data = await api('/api/update');
+    if (data.update_available) {
+      showToast(`Actualización disponible: v${data.latest}. Abrí la bandeja del sistema para actualizar.`);
+    }
+  } catch {}
 }
 
 function setConnected(user, restored = false) {

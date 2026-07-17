@@ -1,6 +1,7 @@
 import hashlib
 import html
 import json
+import logging
 import re
 from html.parser import HTMLParser
 from pathlib import Path
@@ -9,6 +10,8 @@ from urllib.parse import urlsplit, urlunsplit
 from config import BASE_URL
 from downloader import download_file, sanitize_filename
 from organizer import save_json
+
+logger = logging.getLogger("campus-archive")
 
 
 class _AttachmentParser(HTMLParser):
@@ -224,12 +227,9 @@ def download_asset(session, manifest, course_id: str, asset: dict, callback=None
     path = Path(asset["path"])
     size = asset.get("size", 0)
     modified = asset.get("modified")
-    # A manifest entry can point to an old course path. Only skip when the
-    # expected destination for this download also exists.
     if path.is_file() and not manifest.file_needs_download(
         course_id, asset["ref"], asset["name"], size, modified
     ):
-        # Upgrade legacy entries to SHA-256 without downloading again.
         manifest.mark_downloaded(
             course_id, asset["ref"], asset["name"], size, str(path), modified,
             asset.get("type", "file"), asset.get("url", ""),
@@ -250,7 +250,9 @@ def download_asset(session, manifest, course_id: str, asset: dict, callback=None
         on_error=(lambda message: callback("error", f"Error descargando {asset['name']}: {message}")) if callback else None,
     )
     if not ok:
+        logger.error("Descarga fallida: %s (curso=%s, ref=%s, size=%s)", asset["name"], course_id, asset["ref"], size)
         return "failed"
+    logger.info("Descargado: %s (%s bytes)", asset["name"], size)
     manifest.mark_downloaded(
         course_id, asset["ref"], asset["name"], size, str(path), modified,
         asset.get("type", "file"), asset.get("url", ""),

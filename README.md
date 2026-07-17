@@ -15,6 +15,7 @@ Herramienta web para respaldar todo el contenido de Blackboard Learn (Universida
 - **Organización automática** — `Semestre/Curso/contenido/` con metadatos JSON
 - **Soporte Collaborate** — detección y descarga de grabaciones de sesiones
 - **Autenticación local** — valida cookies de una sesión activa sin guardar contraseñas
+- **Actualización automática** — verifica nuevas versiones al iniciar y notifica en la bandeja
 
 ## Requisitos
 
@@ -110,6 +111,12 @@ BlackBoardScrapper/
 | API | Blackboard Learn REST API |
 | Almacenamiento | Sistema de archivos local / OneDrive |
 | Frontend | HTML5, CSS3, Vanilla JS |
+
+## Logs y diagnóstico
+
+Los logs se guardan en:
+- **Windows**: `%LOCALAPPDATA%\Campus Archive\logs\campus-archive.log`
+- **Linux**: `~/.local/share/Campus Archive/logs/campus-archive.log`
 
 ## Licencia
 

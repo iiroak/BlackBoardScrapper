@@ -12,6 +12,7 @@ import os
 import socket
 import sys
 import threading
+import time
 import webbrowser
 
 
@@ -32,6 +33,26 @@ def _resource_path(relative):
     return os.path.join(os.path.dirname(__file__), relative)
 
 
+def _check_update_on_startup():
+    try:
+        import requests
+        from config import APP_VERSION, GITHUB_REPO
+
+        resp = requests.get(
+            f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest",
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        tag = data.get("tag_name", "").lstrip("v")
+        if tag and tag != APP_VERSION:
+            return data.get("html_url", "")
+    except Exception:
+        pass
+    return None
+
+
 def _start_server(port):
     from app import app
     from waitress import serve
@@ -39,7 +60,7 @@ def _start_server(port):
     serve(app, host="127.0.0.1", port=port, threads=8)
 
 
-def _create_tray(url, shutdown_event):
+def _create_tray(url, shutdown_event, update_url=None):
     try:
         import pystray
         from PIL import Image
@@ -52,20 +73,30 @@ def _create_tray(url, shutdown_event):
     def open_browser(icon=None, item=None):
         webbrowser.open(url)
 
+    def open_update(icon=None, item=None):
+        if update_url:
+            webbrowser.open(update_url)
+
     def quit_app(icon=None, item=None):
         icon.stop()
         shutdown_event.set()
 
-    menu = pystray.Menu(
+    menu_items = [
         pystray.MenuItem("Abrir Campus Archive", open_browser, default=True),
-        pystray.MenuItem("Cerrar", quit_app),
-    )
+    ]
+    if update_url:
+        menu_items.append(pystray.MenuItem("Actualizar disponible", open_update))
+    menu_items.append(pystray.MenuItem("Cerrar", quit_app))
+
+    tooltip = "Campus Archive"
+    if update_url:
+        tooltip += " - Actualización disponible"
 
     tray = pystray.Icon(
         "Campus Archive",
         image,
-        "Campus Archive",
-        menu,
+        tooltip,
+        pystray.Menu(*menu_items),
     )
 
     tray.run()
@@ -81,6 +112,10 @@ if __name__ == "__main__":
     print(f"  Abriendo {url}")
     print("  Cerrá desde la bandeja del sistema")
     print("=" * 50)
+
+    update_url = _check_update_on_startup()
+    if update_url:
+        print(f"  ⚠ Hay una actualización disponible: {update_url}")
     print()
 
     server_thread = threading.Thread(target=_start_server, args=(port,), daemon=True)
@@ -95,4 +130,4 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             shutdown_event.set()
     else:
-        _create_tray(url, shutdown_event)
+        _create_tray(url, shutdown_event, update_url)

@@ -1,11 +1,14 @@
 import json
+import logging
 import queue
 import threading
 import time
 from pathlib import Path
 
+import requests
 from flask import Flask, Response, jsonify, render_template, request
 
+from config import USER_DATA_DIR, APP_VERSION, GITHUB_REPO
 from auth import (
     console_session_setup,
     get_console_script,
@@ -30,6 +33,16 @@ from content_sync import (
 from manifest import Manifest
 import storage
 from organizer import content_dir, course_dir, save_json
+
+LOG_DIR = USER_DATA_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+logging.basicConfig(
+    filename=str(LOG_DIR / "campus-archive.log"),
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("campus-archive")
 
 app = Flask(__name__)
 
@@ -700,6 +713,7 @@ def download():
         try:
             _do_download(client, items_to_process, tid)
         except Exception as error:
+            logger.error("Descarga detenida: %s", error)
             _push_progress(tid, "failed", f"Descarga detenida: {error}")
             with _lock:
                 if task_progress.get(tid):
@@ -986,7 +1000,9 @@ def get_manifest():
 
 @app.route("/api/manifest/audit", methods=["POST"])
 def audit_manifest():
-    return jsonify(Manifest().audit())
+    result = Manifest().audit()
+    logger.info("Auditoría: %d verificados, %d corruptos, %d faltantes", result["verified"], result["corrupt"], result["missing"])
+    return jsonify(result)
 
 
 @app.route("/api/stats")
@@ -1022,6 +1038,38 @@ def _fmt_size(size: int) -> str:
             return f"{size:.1f}{unit}"
         size /= 1024
     return f"{size:.1f}TB"
+
+
+# ── Update checker ─────────────────────────────────────
+
+def _check_update():
+    try:
+        resp = requests.get(
+            f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest",
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        tag = data.get("tag_name", "").lstrip("v")
+        if tag and tag != APP_VERSION:
+            return {
+                "current": APP_VERSION,
+                "latest": tag,
+                "url": data.get("html_url", ""),
+                "published": data.get("published_at", ""),
+            }
+    except Exception:
+        pass
+    return None
+
+
+@app.route("/api/update")
+def check_update():
+    result = _check_update()
+    if result:
+        return jsonify({"update_available": True, **result})
+    return jsonify({"update_available": False, "current": APP_VERSION})
 
 
 # ── Main page ─────────────────────────────────────────

@@ -8,6 +8,8 @@ PUBLIC_API_BASE = f"{BASE_URL}/learn/api/public/v1"
 COLLAB_BASE = "https://us-lti.bbcollab.com/collab/api/csa"
 
 APP_NAME = "Campus Archive"
+APP_VERSION = "1.2.0"
+GITHUB_REPO = "iiroak/BlackBoardScrapper"
 
 
 def user_data_dir() -> Path:

@@ -1,5 +1,5 @@
 #define AppName "Campus Archive"
-#define AppVersion "1.0.0"
+#define AppVersion "1.2.0"
 #define AppPublisher "iiroak"
 #define AppExeName "BlackBoardScrapper.exe"
 

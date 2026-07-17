@@ -1,3 +1,4 @@
+import logging
 import re
 import hashlib
 import time
@@ -6,6 +7,8 @@ from pathlib import Path
 import requests
 
 from config import DOWNLOAD_TIMEOUT
+
+logger = logging.getLogger("campus-archive")
 
 
 INVALID_CHARS = re.compile(r'[<>:"/\\|?*]')
@@ -80,7 +83,7 @@ def download_file(
                     if attempt < max_retries - 1:
                         continue
                     message = "HTTP 416 después de reiniciar la descarga"
-                    print(f"  ✗ {description}: {message}")
+                    logger.error("%s: %s", description, message)
                     if on_error:
                         on_error(message)
                     return False
@@ -94,7 +97,7 @@ def download_file(
                         time.sleep(2 * (attempt + 1))
                         continue
                     message = f"HTTP {resp.status_code}"
-                    print(f"  ✗ {description}: {message}")
+                    logger.error("%s: %s", description, message)
                     if on_error:
                         on_error(message)
                     return False
@@ -107,7 +110,7 @@ def download_file(
             if _is_probably_login_page(resp, expected_size, expected_mime):
                 resp.close()
                 message = "el servidor devolvió una página de login"
-                print(f"  ✗ {description}: {message}")
+                logger.error("%s: %s", description, message)
                 if on_error:
                     on_error(message)
                 return False
@@ -124,7 +127,7 @@ def download_file(
             if expected_size not in (None, 0) and actual_size != expected_size:
                 expected_type = (expected_mime or "").split(";", 1)[0].lower().strip()
                 if expected_type and response_type == expected_type:
-                    print(f"  ⚠ {description}: Blackboard indicó {expected_size} bytes, servidor entregó {actual_size}")
+                    logger.warning("%s: Blackboard indicó %s bytes, servidor entregó %s", description, expected_size, actual_size)
                 else:
                     raise ValueError(f"tamaño incorrecto ({actual_size} vs {expected_size})")
 
@@ -139,7 +142,7 @@ def download_file(
                 continue
             partial_path.unlink(missing_ok=True)
             message = f"error - {e}"
-            print(f"  ✗ {description}: {message}")
+            logger.error("%s: %s", description, message, exc_info=True)
             if on_error:
                 on_error(message)
             return False
