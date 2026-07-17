@@ -1,13 +1,14 @@
 #define AppName "Campus Archive"
-#define AppVersion "1.2.0"
+#define AppVersion "1.2.1"
 #define AppPublisher "iiroak"
 #define AppExeName "BlackBoardScrapper.exe"
 
 [Setup]
-AppId={{B2A7A6E5-50E4-4AC6-AF0B-0D75C8D8C9B4}
+AppId=B2A7A6E5-50E4-4AC6-AF0B-0D75C8D8C9B4
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
+AppVerName={#AppName} {#AppVersion}
 DefaultDirName={localappdata}\Programs\Campus Archive
 DefaultGroupName={#AppName}
 OutputDir=..\dist\installer
@@ -15,7 +16,10 @@ OutputBaseFilename=Campus-Archive-Setup
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
 Uninstallable=yes
+UninstallDisplayName={#AppName}
+UninstallDisplayIcon={app}\{#AppExeName}
 ArchitecturesInstallIn64BitMode=x64compatible
 LicenseFile=..\LICENSE
 SetupIconFile=..\packaging\icon.ico

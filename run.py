@@ -45,8 +45,12 @@ def _check_update_on_startup():
         if resp.status_code != 200:
             return None
         data = resp.json()
-        tag = data.get("tag_name", "").lstrip("v")
-        if tag and tag != APP_VERSION:
+        tag = data.get("tag_name", "").lstrip("v").strip()
+        if not tag:
+            return None
+        current_parts = tuple(int(x) for x in APP_VERSION.split(".") if x.isdigit())
+        latest_parts = tuple(int(x) for x in tag.split(".") if x.isdigit())
+        if latest_parts > current_parts:
             return data.get("html_url", "")
     except Exception:
         pass

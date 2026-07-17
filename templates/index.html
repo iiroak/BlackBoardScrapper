@@ -100,6 +100,20 @@
       </div>
     </div>
   </div>
+
+    <div id="welcomeModal" class="modal-overlay" hidden>
+      <div class="modal-card"><div class="modal-head"><div><p class="eyebrow">PRIMEROS PASOS</p><h2>Bienvenido a Campus Archive</h2></div></div>
+        <p style="margin:0 0 12px">Campus Archive corre en segundo plano. Para cerrar la app:</p>
+        <ul style="margin:0 0 16px 20px;line-height:1.7">
+          <li><strong>Windows</strong>: buscá el ícono <strong>Bb</strong> en la bandeja del sistema (abajo a la derecha, junto al reloj). Click derecho → <strong>Cerrar</strong>.</li>
+          <li><strong>Linux</strong>: mismo ícono en el área de notificaciones. Click derecho → <strong>Cerrar</strong>.</li>
+        </ul>
+        <p style="margin:0 0 16px;color:#887487;font-size:.85rem">Si no ves el ícono, hacé click en la flecha ↑ para expandir la bandeja oculta.</p>
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:.85rem;color:#887487"><input id="welcomeDontShow" type="checkbox"> No mostrar de nuevo</label>
+        <button class="button button-primary full-button" onclick="closeWelcome()">Entendido</button>
+      </div>
+    </div>
+
   <script src="/static/app.js"></script>
 </body>
 </html>

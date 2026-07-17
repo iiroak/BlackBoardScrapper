@@ -77,10 +77,21 @@ async function api(url, options = {}) {
 
 // Authentication -----------------------------------------------------------
 
+function showWelcomeIfNeeded() {
+  if (localStorage.getItem('campusArchive_welcomeDismissed')) return;
+  $('welcomeModal').hidden = false;
+}
+
+function closeWelcome() {
+  if ($('welcomeDontShow').checked) localStorage.setItem('campusArchive_welcomeDismissed', '1');
+  $('welcomeModal').hidden = true;
+}
+
 async function checkAuth() {
   todayLabel();
   loadStorageStatus();
   checkForUpdate();
+  showWelcomeIfNeeded();
   try {
     const data = await api('/api/auth/status');
     if (data.connected) setConnected(data.user, data.restored);

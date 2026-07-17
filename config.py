@@ -8,7 +8,7 @@ PUBLIC_API_BASE = f"{BASE_URL}/learn/api/public/v1"
 COLLAB_BASE = "https://us-lti.bbcollab.com/collab/api/csa"
 
 APP_NAME = "Campus Archive"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 GITHUB_REPO = "iiroak/BlackBoardScrapper"
 
 
