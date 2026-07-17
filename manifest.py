@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import threading
 import time
@@ -7,6 +8,8 @@ from pathlib import Path
 
 from downloader import get_file_hash
 import storage
+
+logger = logging.getLogger("campus-archive")
 
 
 _MANIFEST_LOCK = threading.RLock()
